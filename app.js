@@ -33,9 +33,9 @@
   function fetchGeo(code, useV2) {
     var key = code + (useV2 ? '_v2' : '');
     if (geoCache[key]) return Promise.resolve(geoCache[key]);
-    var url = (useV2 ? GEO2 : GEO) + code + '_full.json';
+    var url = 'geo/' + code + (useV2 ? '_v2' : '') + '.json';
     return fetch(url).then(function (r) {
-      if (!r.ok) throw new Error('geo ' + code + ' ' + r.status);
+      if (!r.ok) throw new Error('本地地图 ' + code + ' HTTP ' + r.status);
       return r.json();
     }).then(function (j) { geoCache[key] = j; return j; });
   }
@@ -410,7 +410,7 @@
           };
           box.appendChild(d);
         });
-      }).catch(function (e) { $('#hist').innerHTML = '<div class="muted">历史加载失败：' + e.message + '</div>'; });
+      }).catch(function (e) { $('#hist').innerHTML = '<div class="muted">修改历史暂不可用（浏览器安全限制，需配置服务端代理）</div>'; });
   }
 
   /* ---------- 导出 ---------- */
