@@ -3,7 +3,7 @@
   'use strict';
 
   var C = {
-    on: '#38B6FF', off: '#E4E7EB', nodata: '#F5F6F8',
+    on: '#38B6FF', off: '#94A3B8', nodata: '#F5F6F8',
     onHi: '#0EA5E9', border: '#FFFFFF', borderDim: '#CBD5E1'
   };
 
@@ -162,7 +162,7 @@
         // 直筒子市：市域轮廓 + 镇街气泡点
         var pts = rs.map(function (r) {
           return { name: r.name, value: [r.lng, r.lat],
-            itemStyle: { color: r.status === 'on' ? C.on : '#94A3B8',
+            itemStyle: { color: r.status === 'on' ? C.on : C.off,
               borderColor: '#fff', borderWidth: 1.5,
               shadowBlur: 6, shadowColor: 'rgba(0,0,0,.15)' }, _r: r };
         });
@@ -267,7 +267,7 @@
     list.forEach(function (r) {
       var d = el('div', 'row' + (dirty[r.adcode] ? ' dirty' : ''));
       d.innerHTML =
-        '<span class="dot" style="background:' + (r.status === 'on' ? C.on : '#CBD5E1') + '"></span>' +
+        '<span class="dot" style="background:' + (r.status === 'on' ? C.on : C.off) + '"></span>' +
         '<span class="rn">' + r.name + '</span>' +
         '<span class="rc">' + r.city + '</span>' +
         '<span class="rp">' + (r.pop ? wan(r.pop) : (r.level === 'town' ? '镇街' : '—')) + '</span>';
@@ -475,7 +475,6 @@
     $('#btnCfgClose').onclick = function () { $('#modal').classList.remove('open'); };
     $('#btnPush').onclick = push;
     $('#btnCSV').onclick = exportCSV;
-    $('#src').textContent = META.popSource;
     flagDirty(); render();
   }).catch(function (e) {
     document.body.innerHTML = '<div style="padding:40px;font:14px system-ui">数据加载失败：' + e.message +
