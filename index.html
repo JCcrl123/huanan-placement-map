@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>华南投放城市 & 区县</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:14px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+  background:#F8FAFC;color:#0F172A;height:100vh;overflow:hidden}
+.app{display:flex;flex-direction:column;height:100vh}
+header{display:flex;align-items:center;gap:14px;padding:12px 20px;background:#fff;
+  border-bottom:1px solid #E2E8F0;flex-shrink:0}
+h1{font-size:16px;font-weight:600;letter-spacing:-.2px}
+h1 small{font-weight:400;color:#94A3B8;font-size:12px;margin-left:8px}
+.grow{flex:1}
+.badge{font-size:12px;padding:3px 10px;border-radius:20px;font-weight:500}
+.badge.ok{background:#F0FDF4;color:#16A34A}
+.badge.warn{background:#FFFBEB;color:#D97706}
+button{font:inherit;font-size:13px;padding:6px 14px;border:1px solid #E2E8F0;background:#fff;
+  border-radius:7px;cursor:pointer;color:#334155;transition:.15s}
+button:hover:not(:disabled){border-color:#94A3B8;background:#F8FAFC}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.pri{background:#0F172A;color:#fff;border-color:#0F172A}
+button.pri:hover:not(:disabled){background:#1E293B}
+main{flex:1;display:flex;min-height:0}
+.left{flex:1;display:flex;flex-direction:column;min-width:0}
+#bread{display:flex;align-items:center;gap:6px;padding:10px 20px;font-size:13px;background:#fff;
+  border-bottom:1px solid #F1F5F9}
+.crumb{color:#38B6FF;cursor:pointer;text-decoration:none}
+.crumb:hover{text-decoration:underline}
+.crumb.cur{color:#0F172A;font-weight:600;cursor:default;text-decoration:none}
+.sep{color:#CBD5E1}
+#kpi{display:flex;gap:0;padding:0 20px;background:#fff;border-bottom:1px solid #E2E8F0}
+.kpi{padding:10px 22px 12px 0;margin-right:22px;border-right:1px solid #F1F5F9;display:flex;
+  flex-direction:column;gap:1px}
+.kpi:last-child{border:0}
+.kl{font-size:11px;color:#94A3B8}
+.kv{font-size:19px;font-weight:650;letter-spacing:-.4px}
+#map{flex:1;min-height:0}
+.err{padding:40px;text-align:center;color:#94A3B8}
+.right{width:310px;background:#fff;border-left:1px solid #E2E8F0;display:flex;
+  flex-direction:column;flex-shrink:0}
+.rhead{padding:12px 14px;border-bottom:1px solid #F1F5F9;display:flex;gap:8px;align-items:center}
+#q{flex:1;padding:6px 10px;border:1px solid #E2E8F0;border-radius:6px;font:inherit;font-size:13px;outline:0}
+#q:focus{border-color:#38B6FF}
+#flt{padding:6px 8px;border:1px solid #E2E8F0;border-radius:6px;font:inherit;font-size:12px;outline:0;background:#fff}
+.rsub{padding:6px 14px;font-size:11px;color:#94A3B8;border-bottom:1px solid #F8FAFC;
+  display:flex;justify-content:space-between}
+#list{flex:1;overflow-y:auto}
+.row{display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;
+  border-bottom:1px solid #F8FAFC;font-size:13px}
+.row:hover{background:#F8FAFC}
+.row.dirty{background:#FFFBEB}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.rn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rc{color:#94A3B8;font-size:11px;flex-shrink:0}
+.rp{color:#64748B;font-size:11px;width:52px;text-align:right;flex-shrink:0}
+#drawer{position:fixed;right:-360px;top:0;bottom:0;width:340px;background:#fff;
+  box-shadow:-8px 0 30px rgba(0,0,0,.09);transition:right .22s;z-index:50;display:flex;
+  flex-direction:column;padding:20px}
+#drawer.open{right:0}
+#eName{font-size:19px;font-weight:650;letter-spacing:-.3px}
+#eSub{font-size:12px;color:#94A3B8;margin:3px 0 12px}
+#ePop{font-size:13px;background:#F8FAFC;padding:9px 12px;border-radius:8px;
+  margin-bottom:16px;color:#334155;line-height:1.7}
+label{display:block;font-size:12px;color:#64748B;margin:12px 0 5px;font-weight:500}
+select,textarea{width:100%;padding:8px 10px;border:1px solid #E2E8F0;border-radius:7px;
+  font:inherit;font-size:13px;outline:0;background:#fff}
+select:focus,textarea:focus{border-color:#38B6FF}
+textarea{resize:vertical;min-height:64px}
+.evt{font-size:12px;color:#64748B;background:#F8FAFC;padding:7px 10px;border-radius:6px;margin-top:4px}
+.dbtn{display:flex;gap:8px;margin-top:20px}
+.dbtn button{flex:1;padding:9px}
+.legend{display:flex;gap:14px;padding:8px 20px;font-size:11px;color:#64748B;
+  background:#fff;border-top:1px solid #F1F5F9;align-items:center}
+.lg{display:flex;align-items:center;gap:5px}
+.sw{width:11px;height:11px;border-radius:3px;border:1px solid rgba(0,0,0,.06)}
+#modal{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;
+  justify-content:center;z-index:100}
+#modal.open{display:flex}
+.mbox{background:#fff;border-radius:12px;padding:24px;width:430px;max-width:92vw}
+.mbox h2{font-size:16px;margin-bottom:4px}
+.mbox p{font-size:12px;color:#94A3B8;margin-bottom:14px;line-height:1.6}
+.mbox input{width:100%;padding:8px 10px;border:1px solid #E2E8F0;border-radius:7px;
+  font:inherit;font-size:13px;outline:0;margin-bottom:2px}
+.mbox input:focus{border-color:#38B6FF}
+.warn-box{background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;font-size:12px;
+  padding:9px 11px;border-radius:7px;margin:12px 0;line-height:1.6}
+.toast{position:fixed;bottom:-60px;left:50%;transform:translateX(-50%);background:#0F172A;
+  color:#fff;padding:10px 20px;border-radius:9px;font-size:13px;transition:bottom .25s;z-index:200;
+  box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.toast.show{bottom:24px}
+.toast.err{background:#DC2626}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>华南投放城市 &amp; 区县<small id="src"></small></h1>
+    <div class="grow"></div>
+    <span id="dirty" class="badge ok">与云端一致</span>
+    <button id="btnCSV">导出 CSV</button>
+    <button id="btnCfg">连接设置</button>
+    <button id="btnPush" class="pri" disabled>保存到云端</button>
+  </header>
+  <main>
+    <div class="left">
+      <div id="bread"></div>
+      <div id="kpi"></div>
+      <div id="map"></div>
+      <div class="legend">
+        <span class="lg"><span class="sw" style="background:#38B6FF"></span>投放中</span>
+        <span class="lg"><span class="sw" style="background:#E4E7EB"></span>未投放</span>
+        <span class="lg"><span class="sw" style="background:#F5F6F8"></span>未纳入清单</span>
+        <span class="lg" style="margin-left:auto">东莞 / 中山为不设区的地级市，以镇街气泡点呈现</span>
+      </div>
+    </div>
+    <div class="right">
+      <div class="rhead">
+        <input id="q" placeholder="搜索区县 / 城市 / 备注"/>
+        <select id="flt">
+          <option value="">全部</option>
+          <option value="on">投放中</option>
+          <option value="off">未投放</option>
+        </select>
+      </div>
+      <div class="rsub"><span>当前范围明细</span><span id="lcount"></span></div>
+      <div id="list"></div>
+    </div>
+  </main>
+</div>
+
+<div id="drawer">
+  <div id="eName"></div>
+  <div id="eSub"></div>
+  <div id="ePop"></div>
+  <label>投放状态</label>
+  <select id="eStatus">
+    <option value="on">投放中</option>
+    <option value="off">未投放</option>
+  </select>
+  <label>备注</label>
+  <textarea id="eRemark" placeholder="例如：250808 加入投放"></textarea>
+  <label>原表事件记录（只读）</label>
+  <div class="evt" id="eEvent"></div>
+  <div class="dbtn">
+    <button id="btnCancel">取消</button>
+    <button id="btnSave" class="pri">保存</button>
+  </div>
+</div>
+
+<div id="modal">
+  <div class="mbox">
+    <h2>Gitee 连接设置</h2>
+    <p>数据保存在 Gitee 仓库，点击「保存到云端」后所有人打开链接都能看到最新数据。</p>
+    <label>私人令牌（Token）</label>
+    <input id="cToken" type="password" placeholder="在 Gitee 设置 → 私人令牌 中生成"/>
+    <div class="warn-box">
+      Token 仅保存在你本机浏览器的 localStorage，不会上传到任何其他服务器。
+      请勿在公用电脑上保存。权限勾选「projects」即可。
+    </div>
+    <div class="dbtn">
+      <button id="btnCfgClose">取消</button>
+      <button id="btnCfgSave" class="pri">保存</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<script src="echarts.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
