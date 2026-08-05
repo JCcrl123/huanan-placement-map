@@ -14,7 +14,7 @@
   var geoCache = {}, registered = {};
   var dirty = {};           // adcode -> record（未提交的改动）
   var remoteSha = null;
-  var cfg = load('hn_cfg', { owner: '', repo: '', branch: 'main', token: '', path: 'placements.json', proxy: '' });
+  var cfg = load('hn_cfg', { owner: '', repo: '', branch: 'main', token: '', path: 'data/placements.json', proxy: '' });
 
   /* ---------- 存储 ---------- */
   function load(k, d) { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } }
