@@ -19,7 +19,7 @@
   var geoCache = {}, registered = {};
   var dirty = {};           // adcode -> record（未保存到云端的改动）
   var remoteSha = null;
-  var cfg = load('hn_cfg', { token: '' });
+  var cfg = load('hn_gitee_cfg', { token: '' });
 
   /* ---------- 存储 ---------- */
   function load(k, d) { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } }
@@ -334,10 +334,11 @@
   /* ---------- Gitee 同步 ---------- */
   function api(path, opt) {
     opt = opt || {};
+    var noAuth = opt.noAuth; delete opt.noAuth;
     opt.headers = Object.assign({
       'Accept': 'application/json'
     }, opt.headers || {});
-    if (cfg.token) opt.headers['Authorization'] = 'token ' + cfg.token;
+    if (cfg.token && !noAuth) opt.headers['Authorization'] = 'token ' + cfg.token;
     var url = API_BASE + path;
     return fetch(url, opt).then(function (r) {
       return r.json().then(function (j) {
@@ -386,7 +387,7 @@
   }
 
   function loadDataFromGitee() {
-    return api('/repos/' + OWNER + '/' + REPO + '/contents/' + DATA_PATH + '?ref=' + BRANCH)
+    return api('/repos/' + OWNER + '/' + REPO + '/contents/' + DATA_PATH + '?ref=' + BRANCH, { noAuth: true })
       .then(function (j) {
         remoteSha = j.sha;
         return JSON.parse(unb64(j.content));
@@ -426,7 +427,7 @@
   }
   function saveCfg() {
     cfg.token = $('#cToken').value.trim();
-    save('hn_cfg', cfg); $('#modal').classList.remove('open');
+    save('hn_gitee_cfg', cfg); $('#modal').classList.remove('open');
     toast('已保存 Token');
   }
 
