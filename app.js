@@ -14,7 +14,7 @@
   var geoCache = {}, registered = {};
   var dirty = {};           // adcode -> record（未提交的改动）
   var remoteSha = null;
-  var cfg = load('hn_cfg', { owner: '', repo: '', branch: 'main', token: '', path: 'placements.json' });
+  var cfg = load('hn_cfg', { owner: '', repo: '', branch: 'main', token: '', path: 'placements.json', proxy: '' });
 
   /* ---------- 存储 ---------- */
   function load(k, d) { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } }
@@ -336,7 +336,9 @@
       'Authorization': 'Bearer ' + cfg.token,
       'X-GitHub-Api-Version': '2022-11-28'
     }, opt.headers || {});
-    return fetch('https://api.github.com' + path, opt).then(function (r) {
+    var base = cfg.proxy && cfg.proxy.trim()
+      ? cfg.proxy.trim().replace(/\/+$/, '') : 'https://api.github.com';
+    return fetch(base + path, opt).then(function (r) {
       return r.json().then(function (j) {
         if (!r.ok) throw new Error((j.message || r.status) + '');
         return j;
@@ -437,12 +439,12 @@
   /* ---------- 配置弹窗 ---------- */
   function openCfg() {
     $('#cOwner').value = cfg.owner; $('#cRepo').value = cfg.repo;
-    $('#cBranch').value = cfg.branch; $('#cToken').value = cfg.token;
+    $('#cBranch').value = cfg.branch; $('#cToken').value = cfg.token; $('#cProxy').value = cfg.proxy || '';
     $('#modal').classList.add('open');
   }
   function saveCfg() {
     cfg.owner = $('#cOwner').value.trim(); cfg.repo = $('#cRepo').value.trim();
-    cfg.branch = $('#cBranch').value.trim() || 'main'; cfg.token = $('#cToken').value.trim();
+    cfg.branch = $('#cBranch').value.trim() || 'main'; cfg.token = $('#cToken').value.trim(); cfg.proxy = $('#cProxy').value.trim();
     save('hn_cfg', cfg); $('#modal').classList.remove('open');
     toast('已保存连接配置'); loadHistory();
   }

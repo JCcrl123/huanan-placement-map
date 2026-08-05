@@ -176,6 +176,8 @@ textarea{resize:vertical;min-height:64px}
     <input id="cBranch" placeholder="main"/>
     <label>Fine-grained Token</label>
     <input id="cToken" type="password" placeholder="github_pat_..."/>
+    <label>CORS 代理地址（可选，部署 Cloudflare Worker 后填）</label>
+    <input id="cProxy" placeholder="https://你的-worker.workers.dev"/>
     <div class="warn-box">
       Token 仅保存在你本机浏览器的 localStorage，不会上传到任何服务器。
       公用电脑请勿保存。权限只需 Contents = Read and write。
