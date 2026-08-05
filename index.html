@@ -56,15 +56,6 @@ main{flex:1;display:flex;min-height:0}
 .rn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rc{color:#94A3B8;font-size:11px;flex-shrink:0}
 .rp{color:#64748B;font-size:11px;width:52px;text-align:right;flex-shrink:0}
-.hsec{border-top:1px solid #E2E8F0;max-height:190px;display:flex;flex-direction:column}
-.htitle{padding:9px 14px 5px;font-size:11px;color:#94A3B8;font-weight:600;letter-spacing:.3px}
-#hist{overflow-y:auto;padding-bottom:6px}
-.hrow{padding:6px 14px;cursor:pointer;border-left:2px solid transparent}
-.hrow:hover{background:#F8FAFC;border-left-color:#38B6FF}
-.hm{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.hs{font-size:10px;color:#94A3B8}
-.hs code{background:#F1F5F9;padding:0 3px;border-radius:3px}
-.muted{color:#94A3B8;font-size:12px;padding:8px 14px}
 #drawer{position:fixed;right:-360px;top:0;bottom:0;width:340px;background:#fff;
   box-shadow:-8px 0 30px rgba(0,0,0,.09);transition:right .22s;z-index:50;display:flex;
   flex-direction:column;padding:20px}
@@ -108,11 +99,10 @@ textarea{resize:vertical;min-height:64px}
   <header>
     <h1>华南投放城市 &amp; 区县<small id="src"></small></h1>
     <div class="grow"></div>
-    <span id="dirty" class="badge ok">已同步</span>
+    <span id="dirty" class="badge ok">与云端一致</span>
     <button id="btnCSV">导出 CSV</button>
     <button id="btnCfg">连接设置</button>
-    <button id="btnPull">拉取云端</button>
-    <button id="btnPush" class="pri" disabled>提交到 GitHub</button>
+    <button id="btnPush" class="pri" disabled>保存到云端</button>
   </header>
   <main>
     <div class="left">
@@ -137,10 +127,6 @@ textarea{resize:vertical;min-height:64px}
       </div>
       <div class="rsub"><span>当前范围明细</span><span id="lcount"></span></div>
       <div id="list"></div>
-      <div class="hsec">
-        <div class="htitle">修改历史（点击可回滚）</div>
-        <div id="hist"><div class="muted">配置 GitHub 连接后显示</div></div>
-      </div>
     </div>
   </main>
 </div>
@@ -166,21 +152,13 @@ textarea{resize:vertical;min-height:64px}
 
 <div id="modal">
   <div class="mbox">
-    <h2>GitHub 连接设置</h2>
-    <p>数据保存在你的私有仓库，每次提交生成一个 commit，可在右侧历史中回滚。</p>
-    <label>Owner（GitHub 用户名）</label>
-    <input id="cOwner" placeholder="JCcrl123"/>
-    <label>仓库名</label>
-    <input id="cRepo" placeholder="huanan-placement-map"/>
-    <label>分支</label>
-    <input id="cBranch" placeholder="main"/>
-    <label>Fine-grained Token</label>
-    <input id="cToken" type="password" placeholder="github_pat_..."/>
-    <label>CORS 代理地址（可选，部署 Cloudflare Worker 后填）</label>
-    <input id="cProxy" placeholder="https://你的-worker.workers.dev"/>
+    <h2>Gitee 连接设置</h2>
+    <p>数据保存在 Gitee 仓库，点击「保存到云端」后所有人打开链接都能看到最新数据。</p>
+    <label>私人令牌（Token）</label>
+    <input id="cToken" type="password" placeholder="在 Gitee 设置 → 私人令牌 中生成"/>
     <div class="warn-box">
-      Token 仅保存在你本机浏览器的 localStorage，不会上传到任何服务器。
-      公用电脑请勿保存。权限只需 Contents = Read and write。
+      Token 仅保存在你本机浏览器的 localStorage，不会上传到任何其他服务器。
+      请勿在公用电脑上保存。权限勾选「projects」即可。
     </div>
     <div class="dbtn">
       <button id="btnCfgClose">取消</button>

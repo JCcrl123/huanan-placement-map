@@ -1,4 +1,4 @@
-/* 华南投放城市 & 区县 —— 交互地图 */
+/* 华南投放城市 & 区县 —— 交互地图（Gitee 云端版） */
 (function () {
   'use strict';
 
@@ -6,15 +6,20 @@
     on: '#38B6FF', off: '#E4E7EB', nodata: '#F5F6F8',
     onHi: '#0EA5E9', border: '#FFFFFF', borderDim: '#CBD5E1'
   };
-  var GEO = 'https://geo.datav.aliyun.com/areas_v3/bound/';
-  var GEO2 = 'https://geo.datav.aliyun.com/areas_v2/bound/';
+
+  // 固定仓库配置，如需修改请编辑此处
+  var OWNER = 'chen-ruilin666';
+  var REPO = 'huanan-placement-map';
+  var BRANCH = 'master';
+  var DATA_PATH = 'data/placements.json';
+  var API_BASE = 'https://gitee.com/api/v5';
 
   var DB = null, META = null, chart = null;
   var view = { level: 0, prov: null, city: null };
   var geoCache = {}, registered = {};
-  var dirty = {};           // adcode -> record（未提交的改动）
+  var dirty = {};           // adcode -> record（未保存到云端的改动）
   var remoteSha = null;
-  var cfg = load('hn_cfg', { owner: '', repo: '', branch: 'main', token: '', path: 'data/placements.json', proxy: '' });
+  var cfg = load('hn_cfg', { token: '' });
 
   /* ---------- 存储 ---------- */
   function load(k, d) { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } }
@@ -101,8 +106,7 @@
     }).catch(function (err) {
       $('#map').innerHTML = '<div class="err" style="padding:40px;text-align:center;color:#94A3B8;font-size:13px;line-height:1.8">' +
         '中国地图加载失败<br/><br/>错误：' + err.message +
-        '<br/><br/>可能原因：网络无法访问 geo.datav.aliyun.com（地图边界数据源）' +
-        '<br/>处理：刷新页面重试；如持续失败请检查浏览器控制台(F12 → Console)看具体错误。</div>';
+        '<br/><br/>请检查 geo/ 目录下的地图文件是否已完整上传。</div>';
     });
   }
 
@@ -142,8 +146,7 @@
     }).catch(function (err) {
       $('#map').innerHTML = '<div class="err" style="padding:40px;text-align:center;color:#94A3B8;font-size:13px;line-height:1.8">' +
         '省级地图加载失败<br/><br/>错误：' + err.message +
-        '<br/><br/>可能原因：网络无法访问 geo.datav.aliyun.com' +
-        '<br/>处理：刷新页面重试，或检查浏览器控制台。</div>';
+        '<br/><br/>请检查 geo/ 目录下的地图文件是否已完整上传。</div>';
     });
   }
 
@@ -323,47 +326,33 @@
 
   function flagDirty() {
     var n = Object.keys(dirty).length;
-    $('#dirty').textContent = n ? n + ' 项待提交' : '已同步';
+    $('#dirty').textContent = n ? n + ' 项未保存到云端' : '与云端一致';
     $('#dirty').className = 'badge ' + (n ? 'warn' : 'ok');
     $('#btnPush').disabled = !n;
   }
 
-  /* ---------- GitHub 同步 ---------- */
+  /* ---------- Gitee 同步 ---------- */
   function api(path, opt) {
     opt = opt || {};
     opt.headers = Object.assign({
-      'Accept': 'application/vnd.github+json',
-      'Authorization': 'Bearer ' + cfg.token,
-      'X-GitHub-Api-Version': '2022-11-28'
+      'Accept': 'application/json'
     }, opt.headers || {});
-    // PUT/POST JSON body 时显式声明 Content-Type，避免部分代理/服务器解析异常
-    if (opt.body && !opt.headers['Content-Type']) {
-      opt.headers['Content-Type'] = 'application/json';
-    }
-    var base = cfg.proxy && cfg.proxy.trim()
-      ? cfg.proxy.trim().replace(/\/+$/, '') : 'https://api.github.com';
-    // 25 秒超时，防止代理挂起导致页面一直「提交中…」
-    var ctrl = new AbortController();
-    var timer = setTimeout(function () { ctrl.abort(); }, 25000);
-    opt.signal = ctrl.signal;
-    return fetch(base + path, opt).then(function (r) {
-      clearTimeout(timer);
+    if (cfg.token) opt.headers['Authorization'] = 'token ' + cfg.token;
+    var url = API_BASE + path;
+    return fetch(url, opt).then(function (r) {
       return r.json().then(function (j) {
         if (!r.ok) throw new Error((j.message || r.status) + '');
         return j;
       });
-    }).catch(function (e) {
-      clearTimeout(timer);
-      throw e;
     });
   }
   function b64(s) { return btoa(String.fromCharCode.apply(null, new TextEncoder().encode(s))); }
   function unb64(s) { return new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g, '')), function (c) { return c.charCodeAt(0); })); }
 
   function pull() {
-    if (!cfg.token) return toast('请先配置 GitHub 连接', 1);
+    if (!cfg.token) return toast('请先配置 Gitee Token', 1);
     toast('拉取中…');
-    api('/repos/' + cfg.owner + '/' + cfg.repo + '/contents/' + cfg.path + '?ref=' + cfg.branch)
+    api('/repos/' + OWNER + '/' + REPO + '/contents/' + DATA_PATH + '?ref=' + BRANCH)
       .then(function (j) {
         remoteSha = j.sha;
         var d = JSON.parse(unb64(j.content));
@@ -375,58 +364,38 @@
   }
 
   function push() {
-    if (!cfg.token) return toast('请先配置 GitHub 连接', 1);
+    if (!cfg.token) return toast('请先配置 Gitee Token', 1);
     var n = Object.keys(dirty).length;
-    var msg = prompt('提交说明（会成为一条 commit，可在历史中回溯）',
-      '更新 ' + n + ' 项投放状态');
-    if (msg == null) return;
-    toast('提交中…');
+    if (!n) return toast('没有需要保存的改动');
+    var msg = '更新 ' + n + ' 项投放状态';
+    toast('保存中…');
     var body = JSON.stringify({ records: DB.records, cities: DB.cities, provs: DB.provs }, null, 1);
-    var payload = { message: msg, content: b64(body), branch: cfg.branch };
+    var payload = { message: msg, content: b64(body), branch: BRANCH };
     if (remoteSha) payload.sha = remoteSha;
-    api('/repos/' + cfg.owner + '/' + cfg.repo + '/contents/' + cfg.path, {
-      method: 'PUT', body: JSON.stringify(payload)
+    api('/repos/' + OWNER + '/' + REPO + '/contents/' + DATA_PATH, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
     }).then(function (j) {
       remoteSha = j.content.sha; dirty = {}; flagDirty(); render();
       localStorage.removeItem('hn_draft');
-      toast('已提交 · ' + j.commit.sha.slice(0, 7));
-      loadHistory();
+      toast('已保存到云端');
     }).catch(function (e) {
-      if (e.name === 'AbortError') {
-        toast('提交超时：请检查代理地址或网络，刷新后重试', 1);
-      } else if ((e.message || '').indexOf('does not match') >= 0 || (e.message || '').indexOf('409') >= 0) {
-        toast('冲突：云端已被他人更新，请先「拉取」再重新提交', 1);
-      } else toast('提交失败：' + e.message, 1);
+      if ((e.message || '').indexOf('does not match') >= 0 || (e.message || '').indexOf('409') >= 0) {
+        toast('冲突：云端已被他人更新，请先「拉取」再保存', 1);
+      } else toast('保存失败：' + e.message, 1);
     });
   }
 
-  function loadHistory() {
-    if (!cfg.token) return;
-    api('/repos/' + cfg.owner + '/' + cfg.repo + '/commits?path=' + cfg.path + '&sha=' + cfg.branch + '&per_page=20')
-      .then(function (cs) {
-        var box = $('#hist'); box.innerHTML = '';
-        cs.forEach(function (c) {
-          var d = el('div', 'hrow');
-          var t = new Date(c.commit.author.date);
-          d.innerHTML = '<div class="hm">' + (c.commit.message || '').split('\n')[0] + '</div>' +
-            '<div class="hs">' + c.commit.author.name + ' · ' +
-            t.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) +
-            ' · <code>' + c.sha.slice(0, 7) + '</code></div>';
-          d.onclick = function () {
-            if (!confirm('回滚到该版本？\n\n' + c.commit.message + '\n\n当前未提交的改动会丢失。')) return;
-            api('/repos/' + cfg.owner + '/' + cfg.repo + '/contents/' + cfg.path + '?ref=' + c.sha)
-              .then(function (j) {
-                var dd = JSON.parse(unb64(j.content));
-                DB.records = dd.records; DB.cities = dd.cities; DB.provs = dd.provs;
-                Object.keys(DB.records).forEach(function () {});
-                dirty = {}; DB.records.forEach(function (r) { dirty[r.adcode] = r; });
-                recalc(); render(); flagDirty();
-                toast('已载入 ' + c.sha.slice(0, 7) + ' 的内容，点「提交」生效');
-              });
-          };
-          box.appendChild(d);
+  function loadDataFromGitee() {
+    return api('/repos/' + OWNER + '/' + REPO + '/contents/' + DATA_PATH + '?ref=' + BRANCH)
+      .then(function (j) {
+        remoteSha = j.sha;
+        return JSON.parse(unb64(j.content));
+      }).catch(function (e) {
+        // 公开仓库读取失败时回退到本地文件（兼容本地调试或网络异常）
+        return loadJSON('data/placements.json').catch(function () {
+          return loadJSON('placements.json');
         });
-      }).catch(function (e) { $('#hist').innerHTML = '<div class="muted">修改历史暂不可用（浏览器安全限制，需配置服务端代理）</div>'; });
+      });
   }
 
   /* ---------- 导出 ---------- */
@@ -452,15 +421,13 @@
 
   /* ---------- 配置弹窗 ---------- */
   function openCfg() {
-    $('#cOwner').value = cfg.owner; $('#cRepo').value = cfg.repo;
-    $('#cBranch').value = cfg.branch; $('#cToken').value = cfg.token; $('#cProxy').value = cfg.proxy || '';
+    $('#cToken').value = cfg.token || '';
     $('#modal').classList.add('open');
   }
   function saveCfg() {
-    cfg.owner = $('#cOwner').value.trim(); cfg.repo = $('#cRepo').value.trim();
-    cfg.branch = $('#cBranch').value.trim() || 'main'; cfg.token = $('#cToken').value.trim(); cfg.proxy = $('#cProxy').value.trim();
+    cfg.token = $('#cToken').value.trim();
     save('hn_cfg', cfg); $('#modal').classList.remove('open');
-    toast('已保存连接配置'); loadHistory();
+    toast('已保存 Token');
   }
 
   /* ---------- 启动 ---------- */
@@ -476,13 +443,13 @@
     return next();
   }
   Promise.all([
-    firstOK(['data/placements.json', 'placements.json']),
+    loadDataFromGitee(),
     firstOK(['data/meta.json', 'meta.json'])
   ]).then(function (a) {
     DB = a[0]; META = a[1];
     var draft = load('hn_draft', null);
     if (draft && draft.records && draft.records.length === DB.records.length) {
-      if (confirm('检测到本地有未提交的草稿（' + new Date(draft.ts).toLocaleString('zh-CN') + '）\n是否恢复？')) {
+      if (confirm('检测到本地有未保存到云端的改动（' + new Date(draft.ts).toLocaleString('zh-CN') + '）\n是否恢复？')) {
         DB.records = draft.records;
         DB.records.forEach(function (r) { if (r._m) dirty[r.adcode] = r; });
       } else localStorage.removeItem('hn_draft');
@@ -497,12 +464,10 @@
     $('#btnCfg').onclick = openCfg;
     $('#btnCfgSave').onclick = saveCfg;
     $('#btnCfgClose').onclick = function () { $('#modal').classList.remove('open'); };
-    $('#btnPull').onclick = pull;
     $('#btnPush').onclick = push;
     $('#btnCSV').onclick = exportCSV;
     $('#src').textContent = META.popSource;
     flagDirty(); render();
-    if (cfg.token) loadHistory();
   }).catch(function (e) {
     document.body.innerHTML = '<div style="padding:40px;font:14px system-ui">数据加载失败：' + e.message +
       '<br><br>如果是本地双击打开，浏览器会拦截 fetch 本地文件。请用 <code>python3 -m http.server</code> 起个本地服务，或直接访问已部署的线上地址。</div>';
